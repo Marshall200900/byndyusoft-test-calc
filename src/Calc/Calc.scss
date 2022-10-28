@@ -1,0 +1,80 @@
+.Calc {
+    &__Wrapper {
+        background-color: #F2A8A6;       
+        border-radius: 20px;
+        padding: 25px;
+    }
+    
+    &__Inner {
+        background-color: #416CB6;
+        border-radius: 20px;
+
+        display: flex;
+        flex-direction: column;
+
+
+        padding: 50px;
+
+        max-width: 400px;
+
+    }
+
+    &__Solved {
+        margin-top: 40px;
+
+        text-align: right;
+        font-size: 1.5rem;
+    }
+
+    &__Primer {
+        margin-top: 20px;
+        padding: 0px 5px;
+        white-space: nowrap;
+
+        padding-bottom: 20px;
+
+        text-align: right;
+
+        font-weight: bold;
+        font-size: 3rem;
+
+        overflow: scroll;
+    }
+
+    &__Divider {
+        border: 1px solid #7E97C3;
+    }
+
+    &__Grid {
+        margin-top: 40px;
+
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        row-gap: 20px;
+        column-gap: 30px;
+    }
+
+    &__Button {
+        background-color: unset;
+        border: none;
+        border-radius: 50px;
+
+        width: 80px;
+        height: 80px;
+
+        color: white;
+
+        font-size: 2rem;
+        transition: all 0.1s ease-in;
+
+        &:hover {
+            transition: all 0.1s ease-in;
+            background-color: #557ABA;
+        }
+        
+        &:active {
+            transition: all 0.1s ease-in;
+            background-color: #6d87b4;
+        }
+    }
+}
