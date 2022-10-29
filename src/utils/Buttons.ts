@@ -104,8 +104,12 @@ export const unmergeNumbers = (items: IButton[], buttons?: IButton[]) => {
     return items.reduce((acc: IButton[], item: IButton) => {
         if (item.type === 'number') {
             item.text.split('').forEach(text => {
-                const symb = createSymbol(text);
-                acc.push({ ...symb, text: text === '.' ? ',' : text });
+                if (text === '.') {
+                    acc.push(createSymbol(','));
+                }
+                else {
+                    acc.push(createSymbol(text));
+                }
             })
         } else {
             acc.push(item);

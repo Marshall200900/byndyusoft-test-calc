@@ -22,6 +22,11 @@
     &__Solved {
         margin-top: 40px;
 
+        white-space: nowrap;
+        overflow: scroll;
+
+        height: 40px;
+
         text-align: right;
         font-size: 1.5rem;
     }

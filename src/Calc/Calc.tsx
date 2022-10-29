@@ -5,26 +5,30 @@ import './Calc.scss'
 
 export const Calc = () => {
     const [primer, setPrimer] = useState<IButton[]>([]);
+    const [solved, setSolved] = useState<IButton[]>([]);
     /**
      * handle button input
      * @param button button entered
      */
     const enter = (button: IButton) => {
         if (button.type === 'special' && button.func) {
-            return setPrimer((primer) => {
-                return button.func ? button.func(primer, -1, calculatorButtons) : [];
-            });
-            
-        }
-        setPrimer((items) => {
-            let newItems: IButton[];
-            if (primer.findIndex(el => el.type === 'error') !== -1) {
-                newItems = [];
-            } else {
-                newItems = items;
+            const solution = button.func ? button.func(primer, -1, calculatorButtons) : [];
+            if (primer.map(el => el.text).join('') !== solution.map(el => el.text).join('') && solution.length !== 0) {
+                setSolved(primer);
             }
-            return button.input(newItems, button)
-        });
+            setPrimer(solution);
+        } else {
+            setPrimer((items) => {
+                let newItems: IButton[];
+                if (primer.findIndex(el => el.type === 'error') !== -1) {
+                    newItems = [];
+                } else {
+                    newItems = items;
+                }
+                return button.input(newItems, button)
+            });
+
+        }
     }
 
     /**
@@ -85,7 +89,7 @@ export const Calc = () => {
             <div className="Calc__Wrapper">
                 <div className="Calc__Inner">
                     <div className="Calc__Solved">
-                        -
+                        {solved.filter(btn => !btn.ignore).map(el => el.text)}
                     </div>
                     <div ref={primerRef} className="Calc__Primer">
                         {primer.length !== 0 ? primer.map(el => el.text) : '0'}
