@@ -89,7 +89,7 @@ export const Calc = () => {
             <div className="Calc__Wrapper">
                 <div className="Calc__Inner">
                     <div className="Calc__Solved">
-                        {solved.filter(btn => !btn.ignore).map(el => el.text)}
+                        {solved.map(el => el.text)}
                     </div>
                     <div ref={primerRef} className="Calc__Primer">
                         {primer.length !== 0 ? primer.map(el => el.text) : '0'}

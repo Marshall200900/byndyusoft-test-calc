@@ -151,6 +151,31 @@ export const calculate = (origItems?: IButton[], buttons?: IButton[]) => {
     }
 }
 
+// (
+const addParenthesisLeft = (items: IButton[], button: IButton) => {
+    if (items.length === 1 && items[items.length - 1].text === '0') {
+        return [...items.slice(0, items.length - 1), { ...button }];
+    }
+    if (items.length === 0 ||
+        items[items.length - 1].type === 'parenthesis' ||
+        items[items.length - 1].type === 'symbol') {
+        return items.concat(button);
+    }
+    return items;
+}
+
+// )
+const addParenthesisRight = (items: IButton[], button: IButton) => {
+    if (items.length === 0) return items;
+
+    if (items[items.length - 1].type === 'parenthesis' ||
+        items[items.length - 1].type === 'number' ||
+        items[items.length - 1].type === 'percent') {
+        return items.concat(button);
+    }
+    return items;
+}
+
 // 123456789
 const addNumber = (items: IButton[], button: IButton) => {
     if (items.length === 1 && items[items.length - 1].text === '0') {
@@ -158,6 +183,7 @@ const addNumber = (items: IButton[], button: IButton) => {
     }
     if (items.length === 0 ||
         items[items.length - 1].type === 'number' ||
+        items[items.length - 1].type === 'parenthesis' ||
         items[items.length - 1].type === 'symbol' ||
         items[items.length - 1].type === 'dot') {
         return items.concat(button);
@@ -174,7 +200,7 @@ const addSymbol = (items: IButton[], button: IButton) => {
     } 
     else if (
         items[items.length - 1].type === 'number' ||
-        items[items.length - 1].type === 'parenthesis' ||
+        items[items.length - 1].text === ')' ||
         items[items.length - 1].type === 'percent') { return items.concat(button); }
     return items;
 }
@@ -405,13 +431,13 @@ export const calculatorButtons: IButton[] = [
     },
     {
         text: ')',
-        input: addNumber,
+        input: addParenthesisRight,
         type: 'parenthesis',
         ignore: true,
     },
     {
         text: '(',
-        input: addNumber,
+        input: addParenthesisLeft,
         type: 'parenthesis',
         ignore: true,
     },
