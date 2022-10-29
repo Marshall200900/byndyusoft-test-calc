@@ -2,7 +2,7 @@ export interface IButton {
     text: string
     type: string
     func?: (items?: IButton[], idx?: number, buttons?: IButton[]) => IButton[]
-    input?: any
+    input: (items: IButton[], button: IButton) => IButton[]
     priority?: number
     ignore?: boolean
 }
@@ -124,10 +124,7 @@ export const calculate = (origItems?: IButton[], buttons?: IButton[]) => {
     if (items.length === 0) return [];
 
     if (!checkParentheses(items)) {
-        return [{
-            text: 'Error',
-            type: 'error'
-        }];
+        return [createError()];
     }
     try {
         items = mergeNumbers(items);
@@ -244,14 +241,13 @@ export const calculatorButtons: IButton[] = [
         type: 'symbol',
         func: (items?: IButton[], idx?: number) => {
             if (!items || idx === undefined) return [];
-            const newItem = {
+            let newItem = {
                 text: Math.sqrt(Number(items[idx + 1].text)).toString(),
                 type: 'number',
                 input: addNumber
             }
             if (!isFinite(Number(newItem.text))) {
-                newItem.type = 'error';
-                newItem.text = 'Error';
+                newItem = createError();
             }
             return [
                 ...items.slice(0, idx),
@@ -426,7 +422,7 @@ export const calculatorButtons: IButton[] = [
     {
         text: '=',
         type: 'special',
-        input: (items: IButton[]) => true,
+        input: (items: IButton[], button: IButton) => [],
         func: (items?: IButton[], _idx?: number, buttons?: IButton[]) => calculate(items, buttons)
     },
     {
@@ -443,10 +439,6 @@ export const calculatorButtons: IButton[] = [
     },
 ]
 
-export const createSymbol = (str: string | number) => {
-    const btn = calculatorButtons.find(el => el.text === str.toString());
-    return (btn && { ...btn }) ?? { text: 'Error', type: 'error' };
-}
 
 export const createNaN = () => {
     return {
@@ -456,11 +448,17 @@ export const createNaN = () => {
     }
 }
 
-export const createError = () => {
+export const createError = (): IButton => {
     return {
         text: 'Error',
-        type: 'error'
+        type: 'error',
+        input: () => [],
     }
+}
+
+export const createSymbol = (str: string | number) => {
+    const btn = calculatorButtons.find(el => el.text === str.toString());
+    return (btn && { ...btn }) ?? createError();
 }
 
 export const createNumber = (nums: number): IButton => {

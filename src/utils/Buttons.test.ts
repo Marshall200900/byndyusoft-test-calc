@@ -128,8 +128,10 @@ describe('square root', () => {
         ];
         const sqrt = primer[0];
         expect(sqrt?.func).toBeTruthy();
+
         if (sqrt?.func) {
-            expect(sqrt.func(primer, 0)).toMatchObject([createError()]);
+            const solve = sqrt.func(primer, 0);
+            expect(solve[0].text).toBe('Error');
         }
     });
 });
@@ -284,6 +286,6 @@ describe('parenthesis', () => {
             createSymbol(')'),
         ];
         const solved = calculate(primer, calculatorButtons);
-        expect(solved).toMatchObject([createError()]);
+        expect(solved[0].text).toBe('Error');
     });
 });

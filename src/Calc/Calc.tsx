@@ -11,7 +11,7 @@ export const Calc = () => {
      * @param button button entered
      */
     const enter = (button: IButton) => {
-        if (button.type === 'special' && button.func) {
+        if (button.text === '=' && button.func) {
             const solution = button.func ? button.func(primer, -1, calculatorButtons) : [];
             if (primer.map(el => el.text).join('') !== solution.map(el => el.text).join('') && solution.length !== 0) {
                 setSolved(primer);
