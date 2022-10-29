@@ -56,7 +56,7 @@ const checkParentheses = (items: IButton[]) => {
  * solving primer without parenthesis
  * @param items items of primer
  */
-const solve = (newItems: IButton[]): IButton => {
+export const solve = (newItems: IButton[]): IButton => {
     while (newItems.length > 1) {
         let maxPrior = -Infinity;
         let maxPriorIdx = -1;
@@ -69,6 +69,9 @@ const solve = (newItems: IButton[]): IButton => {
         const nextSymbol = newItems[maxPriorIdx];
         if (nextSymbol.func) {
             newItems = nextSymbol.func(newItems, maxPriorIdx);
+            if (newItems.find(el => el.type === 'error')) {
+                return createError();
+            }
         }
     }
     return newItems[0];
@@ -79,11 +82,11 @@ const solve = (newItems: IButton[]): IButton => {
  * @param items unmerged items
  * @returns merged items
  */
-const mergeNumbers = (items: IButton[]) => {
+export const mergeNumbers = (items: IButton[]) => {
     return items.reduce((acc: IButton[], item: IButton) => {
-        if (item.text === ',') {
+        if (item.text === ',') { // replace comma with a dot
             acc[acc.length - 1].text += '.';
-        } else if (item.type === 'number' && acc[acc.length - 1]?.type === 'number') {
+        } else if (item.type === 'number' && acc[acc.length - 1]?.type === 'number') { // merge numbers together
             acc[acc.length - 1].text += item.text;
         } else {
             acc.push(item);
@@ -96,13 +99,13 @@ const mergeNumbers = (items: IButton[]) => {
  * @param items merged items
  * @returns unmerged items
  */
-const unmergeNumbers = (items: IButton[], buttons?: IButton[]) => {
+export const unmergeNumbers = (items: IButton[], buttons?: IButton[]) => {
     if (!buttons) return [];
     return items.reduce((acc: IButton[], item: IButton) => {
         if (item.type === 'number') {
             item.text.split('').forEach(text => {
-                const symb = buttons.find(el => el.text === text);
-                symb && acc.push({ ...symb, text: text === '.' ? ',' : text });
+                const symb = createSymbol(text);
+                acc.push({ ...symb, text: text === '.' ? ',' : text });
             })
         } else {
             acc.push(item);
@@ -111,7 +114,7 @@ const unmergeNumbers = (items: IButton[], buttons?: IButton[]) => {
     }, []);
 }
 
-const calculate = (origItems?: IButton[], buttons?: IButton[]) => {
+export const calculate = (origItems?: IButton[], buttons?: IButton[]) => {
     if (!origItems) return [];
     let items = origItems.map(item => ({ ...item }));
     if (items.length === 0) return [];
@@ -138,31 +141,54 @@ const calculate = (origItems?: IButton[], buttons?: IButton[]) => {
         }
         const result = solve(items);
         const unm = unmergeNumbers([result], buttons);
-        console.log(unm);
         return unm;
     } catch {
         return origItems;
     }
 }
 
+// 123456789
 const addNumber = (items: IButton[], button: IButton) => {
     if (items.length === 1 && items[items.length - 1].text === '0') {
         return [...items.slice(0, items.length - 1), { ...button }];
     }
-    if (items.length === 0 || items[items.length - 1].type === 'number' || items[items.length - 1].type === 'symbol') {
+    if (items.length === 0 ||
+        items[items.length - 1].type === 'number' ||
+        items[items.length - 1].type === 'symbol' ||
+        items[items.length - 1].type === 'dot') {
         return items.concat(button);
     }
-    return [...items, button];
-}
-
-const addSymbol = (items: IButton[], button: IButton) => {
-    if (!items.length) return items;
-    if (items[items.length - 1].type === 'symbol') {
-        return [...items.slice(0, items.length - 1), button];
-    } else if (items[items.length - 1].type === 'number') { return items.concat(button); }
     return items;
 }
 
+// * and /
+const addSymbol = (items: IButton[], button: IButton) => {
+    if (items.length === 0) return items;
+
+    if (items[items.length - 1].type === 'symbol') {
+        return [...items.slice(0, items.length - 1), button];
+    } 
+    else if (
+        items[items.length - 1].type === 'number' ||
+        items[items.length - 1].type === 'parenthesis' ||
+        items[items.length - 1].type === 'percent') { return items.concat(button); }
+    return items;
+}
+
+// + and -
+const addPrimitives = (items: IButton[], button: IButton) => {
+    if (items.length !== 0 && [',', '.'].includes(items[items.length - 1].text)) return items;
+
+    if (items.length === 0 || ['(', ')'].includes(items[items.length - 1].text) || items[items.length - 1].type === 'number') { 
+        return items.concat(button);
+    }
+    else if (items[items.length - 1].type === 'symbol') {
+        return [...items.slice(0, items.length - 1), button];
+    } 
+    return items;
+}
+
+// 0 and 00
 const addZero = (items: IButton[], button: IButton) => {
     if (items.length === 0 || (items.length > 0 &&
         (items[items.length - 1].type === 'number' ||
@@ -174,200 +200,242 @@ const addZero = (items: IButton[], button: IButton) => {
     return items;
 }
 
-export const calculatorButtons: {
-    renderedButtons: IButton[]
-    leftParenthesis: IButton
-    rightParenthesis: IButton
-} = {
-    renderedButtons: [
-        {
-            text: 'C',
-            type: 'special',
-            func: () => [],
-            input: addSymbol
-        },
-        {
-            priority: 100,
-            text: '√',
-            type: 'symbol',
-            func: (items?: IButton[], idx?: number) => {
-                if (!items || idx === undefined) return [];
-                const newItem = {
-                    text: Math.sqrt(Number(items[idx + 1].text)).toString(),
-                    type: 'number',
-                    input: addNumber
-                }
-                return [
-                    ...items.slice(0, idx),
-                    newItem,
-                    ...items.slice(idx + 2)
-                ]
-            },
-            input: (items: IButton[], btn: IButton) => {
-                if (items.length === 0 || items[items.length - 1].type === 'symbol') {
-                    return items.concat({ ...btn });
-                }
-                return items;
-            }
-        },
-        {
-            priority: 90,
-            text: '%',
-            type: 'symbol',
-            func: (items?: IButton[], idx?: number) => {
-                if (!items || idx === undefined) return [];
-                const newItem = {
-                    text: (Number(items[idx - 1].text) * 0.01).toString(),
-                    type: 'number',
-                    input: addNumber
-                }
-                return [
-                    ...items.slice(0, idx - 1),
-                    newItem,
-                    ...items.slice(idx + 2)
-                ]
-            },
-            input: addSymbol
-        },
-        {
-            priority: 90,
-            text: '/',
-            func: (items?: IButton[], idx?: number) => {
-                if (!items || idx === undefined) return [];
-                const newItem = {
-                    text: (Number(items[idx - 1].text) / Number(items[idx + 1].text)).toString(),
-                    type: 'number',
-                    input: addNumber
-                }
-                if (!isFinite(Number(newItem.text))) {
-                    newItem.type = 'error';
-                    newItem.text = 'Error';
-                }
-                return [
-                    ...items.slice(0, idx - 1),
-                    newItem,
-                    ...items.slice(idx + 2)
-                ]
-            },
-            type: 'symbol',
-            input: addSymbol
-        },
-        { text: '7', type: 'number', input: addNumber },
-        { text: '8', type: 'number', input: addNumber },
-        { text: '9', type: 'number', input: addNumber },
-        {
-            priority: 90,
-            text: '×',
-            type: 'symbol',
-            input: addSymbol,
-            func: (items?: IButton[], idx?: number) => {
-                if (!items || idx === undefined) return [];
-
-                const newItem = {
-                    text: (Number(items[idx - 1].text) * Number(items[idx + 1].text)).toString(),
-                    type: 'number',
-                    input: addNumber
-                }
-                return [
-                    ...items.slice(0, idx - 1),
-                    newItem,
-                    ...items.slice(idx + 2)
-                ]
-            }
-        },
-        { text: '4', type: 'number', input: addNumber },
-        { text: '5', type: 'number', input: addNumber },
-        { text: '6', type: 'number', input: addNumber },
-        {
-            priority: 80,
-            text: '-',
-            type: 'symbol',
-            input: addSymbol,
-            func: (items?: IButton[], idx?: number) => {
-                if (!items || idx === undefined) return [];
-
-                const newItem = {
-                    text: (Number(items[idx - 1].text) - Number(items[idx + 1].text)).toString(),
-                    type: 'number',
-                    input: addNumber
-                }
-                return [
-                    ...items.slice(0, idx - 1),
-                    newItem,
-                    ...items.slice(idx + 2)
-                ]
-            }
-        },
-        { text: '1', type: 'number', input: addNumber },
-        { text: '2', type: 'number', input: addNumber },
-        { text: '3', type: 'number', input: addNumber },
-        {
-            priority: 80,
-            text: '+',
-            type: 'symbol',
-            input: addSymbol,
-            func: (items?: IButton[], idx?: number) => {
-                if (!items || idx === undefined) return [];
-
-                const newItem = {
-                    text: (Number(items[idx - 1].text) + Number(items[idx + 1].text)).toString(),
-                    type: 'number',
-                    input: addNumber
-                }
-                return [
-                    ...items.slice(0, idx - 1),
-                    newItem,
-                    ...items.slice(idx + 2)
-                ]
-            }
-        },
-        { text: '0', type: 'number', input: addZero },
-        {
-            text: '00',
-            type: 'number',
-            input: (items: IButton[], button: IButton) => {
-                const oneZero = { ...button, text: '0' };
-                return addZero(addZero(items, oneZero), oneZero);
-            }
-        },
-        {
-            text: ',',
-            type: 'number',
-            input: (btns: IButton[], btn: IButton) => {
-                const prev = btns[btns.length - 1];
-                if (prev && prev.type === 'number' && prev.text !== ',') {
-                    return [...btns, btn];
-                }
-                return btns;
-            }
-        },
-        {
-            text: '.',
-            type: 'number',
-            ignore: true,
-            input: (btns: IButton[], btn: IButton) => {
-                const prev = btns[btns.length - 1];
-                if (prev && prev.type === 'number' && prev.text !== ',') {
-                    return [...btns, btn];
-                }
-                return btns;
-            }
-        },
-        {
-            text: '=',
-            type: 'special',
-            input: (items: IButton[]) => true,
-            func: (items?: IButton[], _idx?: number, buttons?: IButton[]) => calculate(items, buttons)
-        }
-    ],
-    leftParenthesis: {
-        text: '(',
-        input: addNumber,
-        type: 'parenthesis'
+export const calculatorButtons: IButton[] = [
+    {
+        text: 'C',
+        type: 'special',
+        func: () => [],
+        input: addSymbol
     },
-    rightParenthesis: {
+    {
+        priority: 100,
+        text: '√',
+        type: 'symbol',
+        func: (items?: IButton[], idx?: number) => {
+            if (!items || idx === undefined) return [];
+            const newItem = {
+                text: Math.sqrt(Number(items[idx + 1].text)).toString(),
+                type: 'number',
+                input: addNumber
+            }
+            if (!isFinite(Number(newItem.text))) {
+                newItem.type = 'error';
+                newItem.text = 'Error';
+            }
+            return [
+                ...items.slice(0, idx),
+                newItem,
+                ...items.slice(idx + 2)
+            ]
+        },
+        input: (items: IButton[], btn: IButton) => {
+            if (items.length === 0 || items[items.length - 1].type === 'symbol') {
+                return items.concat({ ...btn });
+            }
+            return items;
+        }
+    },
+    {
+        priority: 90,
+        text: '%',
+        type: 'percent',
+        func: (items?: IButton[], idx?: number) => {
+            if (!items || idx === undefined) return [];
+            const newItem = {
+                text: (Number(items[idx - 1].text) * 0.01).toString(),
+                type: 'number',
+                input: addNumber
+            }
+            return [
+                ...items.slice(0, idx - 1),
+                newItem,
+                ...items.slice(idx + 1)
+            ]
+        },
+        input: addSymbol
+    },
+    {
+        priority: 90,
+        text: '/',
+        func: (items?: IButton[], idx?: number) => {
+            if (!items || idx === undefined) return [];
+            const newItem = {
+                text: (Number(items[idx - 1].text) / Number(items[idx + 1].text)).toString(),
+                type: 'number',
+                input: addNumber
+            }
+            if (!isFinite(Number(newItem.text))) {
+                newItem.type = 'error';
+                newItem.text = 'Infinity';
+            }
+            return [
+                ...items.slice(0, idx - 1),
+                newItem,
+                ...items.slice(idx + 2)
+            ]
+        },
+        type: 'symbol',
+        input: addSymbol
+    },
+    { text: '7', type: 'number', input: addNumber },
+    { text: '8', type: 'number', input: addNumber },
+    { text: '9', type: 'number', input: addNumber },
+    {
+        priority: 90,
+        text: '×',
+        type: 'symbol',
+        input: addSymbol,
+        func: (items?: IButton[], idx?: number) => {
+            if (!items || idx === undefined) return [];
+
+            const newItem = {
+                text: (Number(items[idx - 1].text) * Number(items[idx + 1].text)).toString(),
+                type: 'number',
+                input: addNumber
+            }
+            return [
+                ...items.slice(0, idx - 1),
+                newItem,
+                ...items.slice(idx + 2)
+            ]
+        }
+    },
+    { text: '4', type: 'number', input: addNumber },
+    { text: '5', type: 'number', input: addNumber },
+    { text: '6', type: 'number', input: addNumber },
+    {
+        priority: 80,
+        text: '-',
+        type: 'symbol',
+        input: addPrimitives,
+        func: (items?: IButton[], idx?: number) => {
+            if (!items || idx === undefined) return [];
+
+            // if first -> invert the sign
+            if (idx === 0) {
+                const newItem = {
+                    text: (Number(items[idx + 1].text) * -1).toString(),
+                    type: 'number',
+                    input: addNumber
+                }
+                return [newItem, ...items.slice(2)]
+            }
+
+            const newItem = {
+                text: (Number(items[idx - 1].text) - Number(items[idx + 1].text)).toString(),
+                type: 'number',
+                input: addNumber
+            }
+            return [
+                ...items.slice(0, idx - 1),
+                newItem,
+                ...items.slice(idx + 2)
+            ]
+        }
+    },
+    { text: '1', type: 'number', input: addNumber },
+    { text: '2', type: 'number', input: addNumber },
+    { text: '3', type: 'number', input: addNumber },
+    {
+        priority: 80,
+        text: '+',
+        type: 'symbol',
+        input: addPrimitives,
+        func: (items?: IButton[], idx?: number) => {
+            if (!items || idx === undefined) return [];
+
+            if (idx === 0) {
+                return items.slice(1)
+            }
+
+            const newItem = {
+                text: (Number(items[idx - 1].text) + Number(items[idx + 1].text)).toString(),
+                type: 'number',
+                input: addNumber
+            }
+            return [
+                ...items.slice(0, idx - 1),
+                newItem,
+                ...items.slice(idx + 2)
+            ]
+        }
+    },
+    { text: '0', type: 'number', input: addZero },
+    {
+        text: '00',
+        type: 'number',
+        input: (items: IButton[], button: IButton) => {
+            const oneZero = { ...button, text: '0' };
+            return addZero(addZero(items, oneZero), oneZero);
+        }
+    },
+    {
+        text: ',',
+        type: 'dot',
+        input: (btns: IButton[], btn: IButton) => {
+            const prev = btns[btns.length - 1];
+            if (prev && prev.type === 'number' && prev.text !== ',') {
+                return [...btns, btn];
+            }
+            return btns;
+        }
+    },
+    {
+        text: '.',
+        type: 'dot',
+        ignore: true,
+        input: (btns: IButton[], btn: IButton) => {
+            const prev = btns[btns.length - 1];
+            if (prev && prev.type === 'number' && prev.text !== ',') {
+                return [...btns, btn];
+            }
+            return btns;
+        }
+    },
+    {
+        text: '=',
+        type: 'special',
+        input: (items: IButton[]) => true,
+        func: (items?: IButton[], _idx?: number, buttons?: IButton[]) => calculate(items, buttons)
+    },
+    {
         text: ')',
         input: addNumber,
-        type: 'parenthesis'
+        type: 'parenthesis',
+        ignore: true,
+    },
+    {
+        text: '(',
+        input: addNumber,
+        type: 'parenthesis',
+        ignore: true,
+    },
+]
+
+export const createSymbol = (str: string | number) => {
+    const btn = calculatorButtons.find(el => el.text === str.toString());
+    return (btn && { ...btn }) ?? { text: 'Error', type: 'error' };
+}
+
+export const createNaN = () => {
+    return {
+        text: 'NaN',
+        type: 'number',
+        input: addNumber
+    }
+}
+
+export const createError = () => {
+    return {
+        text: 'Error',
+        type: 'error'
+    }
+}
+
+export const createNumber = (nums: number): IButton => {
+    return {
+        text: nums.toString(),
+        type: 'number',
+        input: addNumber
     }
 }

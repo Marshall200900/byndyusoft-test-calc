@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { calculatorButtons, IButton } from '../utils/Buttons';
+import { calculate, calculatorButtons, createSymbol, IButton } from '../utils/Buttons';
 
 import './Calc.scss'
-
-const { renderedButtons: buttons, leftParenthesis, rightParenthesis } = calculatorButtons;
 
 export const Calc = () => {
     const [primer, setPrimer] = useState<IButton[]>([]);
@@ -12,9 +10,11 @@ export const Calc = () => {
      * @param button button entered
      */
     const enter = (button: IButton) => {
-        const btnCopy = { ...button };
         if (button.type === 'special' && button.func) {
-            setPrimer(button.func());
+            return setPrimer((primer) => {
+                return button.func ? button.func(primer, -1, calculatorButtons) : [];
+            });
+            
         }
         setPrimer((items) => {
             let newItems: IButton[];
@@ -23,7 +23,7 @@ export const Calc = () => {
             } else {
                 newItems = items;
             }
-            return button.input(newItems, btnCopy)
+            return button.input(newItems, button)
         });
     }
 
@@ -35,48 +35,38 @@ export const Calc = () => {
         (e.target as HTMLButtonElement)?.blur();
         switch (e.key) {
             case '(':
-                enter(leftParenthesis);
+                enter(createSymbol('('));
                 break;
             case ')':
-                enter(rightParenthesis);
+                enter(createSymbol(')'));
                 break;
             case 'Backspace':
                 setPrimer(primer => primer.slice(0, primer.length - 1));
                 break;
             case '*': {
-                const symb: IButton | undefined = buttons.find(el => el.text === '×');
-                if (symb) {
-                    enter(symb);
-                }
+                enter(createSymbol('×'));
                 break;
             }
-            case '.': {
-                const symb = buttons.find(el => el.text === ',');
-                if (symb) {
-                    enter(symb);
-                }
+            case '%': {
+                enter(createSymbol('%'));
+                break;
+            }
+            case '.':
+            case ',': {
+                enter(createSymbol(','));
                 break;
             }
             case 'Enter':
             case '=': {
-                const eq = buttons.find(el => el.text === '=');
-                if (eq?.func) {
-                    setPrimer(eq.func(primer, -1, buttons));
-                }
+                enter(createSymbol('='));
                 break;
             }
             case 'Escape': {
-                const symb = buttons.find(el => el.text === 'C');
-                if (symb) {
-                    enter(symb);
-                }
+                enter(createSymbol('C'));
                 break;
             }
-            case buttons.filter(b => b.type === 'number' || b.type === 'symbol').find(b => b.text === e.key)?.text: {
-                const symb = buttons.find(el => el.text === e.key);
-                if (symb) {
-                    enter(symb);
-                }
+            case calculatorButtons.filter(b => b.type === 'number' || b.type === 'symbol').find(b => b.text === e.key)?.text: {
+                enter(createSymbol(e.key));
                 break;
             }
         }
@@ -114,7 +104,7 @@ export const Calc = () => {
                     </div>
                     <div className="Calc__Divider" />
                     <div className="Calc__Grid">
-                        {buttons.filter(btn => !btn.ignore).map((button, idx) => (
+                        {calculatorButtons.filter(btn => !btn.ignore).map((button, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => enter(button)}
