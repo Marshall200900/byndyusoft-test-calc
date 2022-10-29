@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { calculate, calculatorButtons, createSymbol, IButton } from '../utils/Buttons';
+import { calculatorButtons, createSymbol, IButton } from '../utils/Buttons';
 
 import './Calc.scss'
 
@@ -34,12 +34,6 @@ export const Calc = () => {
     const enterFromKeyboard = (e: KeyboardEvent) => {
         (e.target as HTMLButtonElement)?.blur();
         switch (e.key) {
-            case '(':
-                enter(createSymbol('('));
-                break;
-            case ')':
-                enter(createSymbol(')'));
-                break;
             case 'Backspace':
                 setPrimer(primer => primer.slice(0, primer.length - 1));
                 break;
@@ -47,17 +41,11 @@ export const Calc = () => {
                 enter(createSymbol('×'));
                 break;
             }
-            case '%': {
-                enter(createSymbol('%'));
-                break;
-            }
-            case '.':
-            case ',': {
+            case '.': {
                 enter(createSymbol(','));
                 break;
             }
-            case 'Enter':
-            case '=': {
+            case 'Enter': {
                 enter(createSymbol('='));
                 break;
             }
@@ -65,10 +53,10 @@ export const Calc = () => {
                 enter(createSymbol('C'));
                 break;
             }
-            case calculatorButtons.filter(b => b.type === 'number' || b.type === 'symbol').find(b => b.text === e.key)?.text: {
-                enter(createSymbol(e.key));
-                break;
-            }
+        }
+
+        if (calculatorButtons.find(el => el.text === e.key)) {
+            enter(createSymbol(e.key));
         }
     };
 
