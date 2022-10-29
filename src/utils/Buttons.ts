@@ -196,6 +196,7 @@ const addPrimitives = (items: IButton[], button: IButton) => {
 const addZero = (items: IButton[], button: IButton) => {
     if (items.length === 0 || (items.length > 0 &&
         (items[items.length - 1].type === 'number' ||
+        items[items.length - 1].type === 'dot' ||
         items[items.length - 1].type === 'symbol') &&
         !(items.length === 1 && items[items.length - 1].text === '0'))
     ) {
