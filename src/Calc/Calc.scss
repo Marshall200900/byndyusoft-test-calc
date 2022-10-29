@@ -6,14 +6,16 @@
     }
     
     &__Inner {
-        background-color: #416CB6;
+
+        background: linear-gradient(#31528B, #4a7dd4);
+        box-shadow: 0 10px 30px rgb(84, 84, 84);
         border-radius: 20px;
 
         display: flex;
         flex-direction: column;
 
 
-        padding: 50px;
+        padding: 20px 50px;
 
         width: 400px;
 
@@ -21,6 +23,8 @@
 
     &__Solved {
         margin-top: 40px;
+
+        padding: 0px 10px;
 
         white-space: nowrap;
         overflow-x: scroll;
@@ -74,12 +78,12 @@
 
         &:hover {
             transition: all 0.1s ease-in;
-            background-color: #557ABA;
+            background-color: #ffffff38;
         }
         
         &:active {
             transition: all 0.1s ease-in;
-            background-color: #6d87b4;
+            background-color: #ffffff38;
         }
     }
 }
